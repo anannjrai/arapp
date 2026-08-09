@@ -13,8 +13,8 @@
         <form method="post" action="{{ route('payment-batches.store') }}" enctype="multipart/form-data" class="stack">
             @csrf
             <label>
-                Payment CSV
-                <input type="file" name="payment_file" accept=".csv,text/csv,text/plain" required>
+                Payment file
+                <input type="file" name="payment_file" accept=".csv,.txt,text/csv,text/plain" required>
             </label>
             <label>
                 Notes

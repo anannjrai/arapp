@@ -190,18 +190,20 @@ class CsvPaymentImportService
 
     public function import(UploadedFile $file, User $user, ?string $notes = null): PaymentBatch
     {
+        $delimiter = $this->delimiterForFile($file);
         $reader = new SplFileObject($file->getRealPath());
+        $reader->setCsvControl($delimiter);
         $reader->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY);
 
         $headers = $reader->fgetcsv();
         if (! is_array($headers) || $headers === [null]) {
-            throw new RuntimeException('The uploaded CSV does not contain a header row.');
+            throw new RuntimeException('The uploaded payment file does not contain a header row.');
         }
 
         if ($this->isPositionHeaderRow($headers)) {
             $headers = $reader->fgetcsv();
             if (! is_array($headers) || $headers === [null]) {
-                throw new RuntimeException('The uploaded CSV does not contain field headers after the position row.');
+                throw new RuntimeException('The uploaded payment file does not contain field headers after the position row.');
             }
         }
 
@@ -309,7 +311,7 @@ class CsvPaymentImportService
             }
 
             if ($rowCount === 0) {
-                throw new RuntimeException('No payment rows were found in the uploaded CSV.');
+                throw new RuntimeException('No payment rows were found in the uploaded payment file.');
             }
 
             $batch->update([
@@ -655,6 +657,11 @@ class CsvPaymentImportService
     private function paymentNumberKey(?string $paymentNo): string
     {
         return $this->fingerprintPart($paymentNo);
+    }
+
+    private function delimiterForFile(UploadedFile $file): string
+    {
+        return Str::lower($file->getClientOriginalExtension()) === 'txt' ? '|' : ',';
     }
 
     private function isUnitedStates(?string $country): bool

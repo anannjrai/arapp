@@ -66,6 +66,29 @@ class PaymentWorkflowTest extends TestCase
         );
     }
 
+    public function test_pipe_delimited_txt_import_from_fusion_is_supported(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('payment-batches.store'), [
+                'payment_file' => $this->paymentTxtRows('fusion-payment.txt', ['123426']),
+            ])
+            ->assertRedirect();
+
+        $batch = PaymentBatch::query()->firstOrFail();
+        $transaction = $batch->transactions()->firstOrFail();
+
+        $this->assertSame('fusion-payment.txt', $batch->source_file_name);
+        $this->assertSame(1, $batch->row_count);
+        $this->assertSame(0, $batch->invalid_count);
+        $this->assertSame('draft', $batch->status);
+        $this->assertSame('NORTHTELECOM LLC', $transaction->supplier_name);
+        $this->assertSame('123426', $transaction->payment_no);
+        $this->assertNull($transaction->validation_errors);
+    }
+
     public function test_get_export_url_redirects_back_to_batch_instead_of_404(): void
     {
         $this->seed();
@@ -398,6 +421,14 @@ class PaymentWorkflowTest extends TestCase
     }
 
     /**
+     * @param array<int, string> $paymentNumbers
+     */
+    private function paymentTxtRows(string $name, array $paymentNumbers): UploadedFile
+    {
+        return $this->paymentRows($name, $paymentNumbers, '|');
+    }
+
+    /**
      * @param array<int, array{payment_no: string, country: string, us_routing_no?: string, uk_sort_code?: string}> $rows
      */
     private function headerlessPaymentCsvRows(string $name, array $rows): UploadedFile
@@ -445,6 +476,19 @@ class PaymentWorkflowTest extends TestCase
         string $bankCountry = 'United Arab Emirates',
         string $bankAccount = 'AE650030000609372193001'
     ): UploadedFile {
+        return $this->paymentRows($name, $paymentNumbers, ',', $bankCountry, $bankAccount);
+    }
+
+    /**
+     * @param array<int, string> $paymentNumbers
+     */
+    private function paymentRows(
+        string $name,
+        array $paymentNumbers,
+        string $delimiter,
+        string $bankCountry = 'United Arab Emirates',
+        string $bankAccount = 'AE650030000609372193001'
+    ): UploadedFile {
         $headers = [
             'Transfer type',
             'Beneficiary bank name',
@@ -471,10 +515,10 @@ class PaymentWorkflowTest extends TestCase
             'City',
         ];
 
-        $content = $this->csvLine($headers);
+        $content = $this->delimitedLine($headers, $delimiter);
 
         foreach ($paymentNumbers as $paymentNumber) {
-            $content .= $this->csvLine([
+            $content .= $this->delimitedLine([
                 'TT',
                 'ABU DHABI COMMERCIAL BANK',
                 'NORTHTELECOM LLC',
@@ -498,7 +542,7 @@ class PaymentWorkflowTest extends TestCase
                 'United Arab Emirates',
                 'Dubai',
                 'Dubai',
-            ]);
+            ], $delimiter);
         }
 
         return UploadedFile::fake()->createWithContent(
@@ -512,8 +556,16 @@ class PaymentWorkflowTest extends TestCase
      */
     private function csvLine(array $values): string
     {
+        return $this->delimitedLine($values, ',');
+    }
+
+    /**
+     * @param array<int, string> $values
+     */
+    private function delimitedLine(array $values, string $delimiter): string
+    {
         $stream = fopen('php://temp', 'r+');
-        fputcsv($stream, $values);
+        fputcsv($stream, $values, $delimiter);
         rewind($stream);
 
         return stream_get_contents($stream);
