@@ -126,6 +126,9 @@ code {
     flex-direction: column;
     width: 260px;
     height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
     background: #0f2a30;
     color: #eef8f9;
     padding: 22px;
@@ -926,6 +929,8 @@ nav[aria-label="Pagination Navigation"] .rounded-r-md {
         position: static;
         width: 100%;
         height: auto;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .main-content {
