@@ -4,7 +4,13 @@
     <div class="page-heading">
         <div>
             <p class="eyebrow">Operations</p>
-            <h1>Dashboard</h1>
+            <div class="dashboard-title-row">
+                <h1>Dashboard</h1>
+                <form class="header-exit-form" method="post" action="{{ route('logout') }}">
+                    @csrf
+                    <button class="button button-ghost button-small" type="submit">Exit</button>
+                </form>
+            </div>
         </div>
         @if(auth()->user()->hasRole(['preparer']))
             <a class="button button-primary" href="{{ route('payment-batches.create') }}">Import Payments</a>

@@ -219,6 +219,17 @@ code {
     margin-bottom: 24px;
 }
 
+.dashboard-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.header-exit-form {
+    margin: 0;
+}
+
 .summary-strip {
     display: flex;
     flex-wrap: wrap;
